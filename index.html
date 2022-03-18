@@ -1,0 +1,137 @@
+<html>
+    <head>
+        <style>
+            .map {
+                width:100%;
+                height: 100%;
+            }
+        </style>
+    </head>
+    <body>
+        <div id="map" class="map"></div>
+        <!-- NOTE: create an apiKey.js file that creates the global `apiKey` for this to work -->
+        <script src="apiKey.js"></script>
+        <script>
+            var sdkUrlTemplate = "https://maps.googleapis.com/maps/api/js?key={apiKey}&callback=initMap"
+            var sdkUrl = sdkUrlTemplate.replace("{apiKey}", apiKey);
+            var scriptTag = document.createElement("script");
+            scriptTag.src = sdkUrl;
+            scriptTag.async = true;
+            scriptTag.defer = true;
+            var body = document.body.insertBefore(scriptTag, document.getElementById("map"));
+        </script>
+        <script async defer>
+            var map;
+
+            var queryParams = function() {
+                var urlSearchParams = new URLSearchParams(window.location.search);
+                var params = Object.fromEntries(urlSearchParams.entries());
+                return params;
+            }();
+
+            var toggles = {
+                test: queryParams.hasOwnProperty("test")
+            };           
+
+            function getCenterOfUsa() {
+                return {
+                    latitude: 37.0902,
+                    longitude: -95.7129
+                };
+            }
+
+            if (!Geolocation.getCurrentPosition) {
+                Geolocation.getCurrentPosition = function getCurrentPosition() {
+                    return {
+                        coords: getCenterOfUsa()
+                    }
+                };
+            }
+
+            function toGMapsPosition(geolocationCoord) {
+                return {
+                    lat: geolocationCoord.latitude,
+                    lng: geolocationCoord.longitude
+                };
+            }
+
+            function initMap() {
+                var data = [];
+                map = new google.maps.Map(document.getElementById("map"), {
+                    center: toGMapsPosition(getCenterOfUsa()),
+                    zoom: 18,
+                });
+
+                function onCheckinReceived(coord) {
+                    var marker = new google.maps.Marker({
+                        position: toGMapsPosition(coord),
+                        map: map,
+                        title: "here's me!"
+                    });
+
+                    data.push(coord);
+
+                    //map.setRestriction({ latLngBounds: getBounds(data) });
+                    var bounds = getBounds(data);
+                    map.panToBounds(bounds, 0);
+                    map.fitBounds(bounds, 0);
+                }
+
+                //var coords = Geolocation.getCurrentPosition().coords;
+
+                if (toggles.test) {
+                    var testData = getTestData();
+                    testData.forEach(function(item, idx) {
+                        setTimeout(function() { onCheckinReceived(item); }, 500 * idx);
+                    });
+                }                
+            }
+
+            function getBounds(coordList) {
+                // these values are picked to guarantee that the first coordinate's
+                // values will override them.
+                var latMin = 90, latMax = -90, lngMin = 180, lngMax = -180;
+
+                coordList.forEach(function(coords) {
+                    if (coords.latitude < latMin) {
+                        latMin = coords.latitude;
+                    }
+                    if (coords.latitude > latMax) {
+                        latMax = coords.latitude;
+                    }
+                    if (coords.longitude < lngMin) {
+                        lngMin = coords.longitude;
+                    }
+                    if (coords.longitude > lngMax) {
+                        lngMax = coords.longitude;
+                    }
+                });
+
+                return {
+                    north: Math.max(latMax, latMin + 1),
+                    south: latMin,
+                    east: Math.max(lngMax, lngMin + 1),
+                    west: lngMin
+                };
+            }
+
+            function random(range) {
+                return range.min + (range.max - range.min) * Math.random()
+            }
+
+            function getTestData() {
+                var a = [];
+                var dataPoints = 100;
+                var latitudeRange = { min: 28.696, max: 48.317 };
+                var longitudeRange = { max: -76.515, min: -118.692 };
+                for (var i=0; i < 100; i++) {
+                    a.push({
+                        latitude: random(latitudeRange),
+                        longitude: random(longitudeRange)
+                    });
+                }
+                return a;
+            }
+        </script>
+    </body>
+</html>
