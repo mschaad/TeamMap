@@ -2,15 +2,18 @@
     <head>
         <style>
             .map {
-                width:100%;
+                width: 100%;
                 height: 100%;
             }
         </style>
     </head>
     <body>
-        <div id="map" class="map"></div>
+        <div id="map" class="map">&nbsp;</div>
         <!-- NOTE: create an apiKey.js file that creates the global `apiKey` for this to work -->
         <script src="apiKey.js"></script>
+        
+        <!-- NOTE: create a firebaseConfig.js file that creates the global `firebaseConfig` for this to work -->
+        <script src="firebaseConfig.js"></script>        
         <script>
             var sdkUrlTemplate = "https://maps.googleapis.com/maps/api/js?key={apiKey}&callback=initMap"
             var sdkUrl = sdkUrlTemplate.replace("{apiKey}", apiKey);
@@ -55,6 +58,10 @@
                 };
             }
 
+            function dump(o) {
+                console.log(JSON.stringify(o));
+            }
+
             function initMap() {
                 var data = [];
                 map = new google.maps.Map(document.getElementById("map"), {
@@ -62,27 +69,34 @@
                     zoom: 18,
                 });
 
-                function onCheckinReceived(coord) {
-                    var marker = new google.maps.Marker({
-                        position: toGMapsPosition(coord),
-                        map: map,
-                        title: "here's me!"
+                function onCheckinDataReceived(coordList) {
+                    console.log("Checkin received.");
+
+                    coordList.forEach(function(coord) {
+                        var gmapsPosition = toGMapsPosition(coord);
+                        var marker = new google.maps.Marker({
+                            position: gmapsPosition,
+                            map: map,
+                            title: "here's me!"
+                        });
+
+                        data.push(gmapsPosition);
                     });
 
-                    data.push(coord);
-
-                    //map.setRestriction({ latLngBounds: getBounds(data) });
                     var bounds = getBounds(data);
+                    dump(bounds);
+                
                     map.panToBounds(bounds, 0);
                     map.fitBounds(bounds, 0);
                 }
 
-                //var coords = Geolocation.getCurrentPosition().coords;
+                window.onCheckinDataReceived = onCheckinDataReceived;
 
                 if (toggles.test) {
+                    console.log("In test mode.");
                     var testData = getTestData();
                     testData.forEach(function(item, idx) {
-                        setTimeout(function() { onCheckinReceived(item); }, 500 * idx);
+                        setTimeout(function() { onCheckinDataReceived([item]); }, 500 * idx);
                     });
                 }                
             }
@@ -93,17 +107,17 @@
                 var latMin = 90, latMax = -90, lngMin = 180, lngMax = -180;
 
                 coordList.forEach(function(coords) {
-                    if (coords.latitude < latMin) {
-                        latMin = coords.latitude;
+                    if (coords.lat < latMin) {
+                        latMin = coords.lat;
                     }
-                    if (coords.latitude > latMax) {
-                        latMax = coords.latitude;
+                    if (coords.lat > latMax) {
+                        latMax = coords.lat;
                     }
-                    if (coords.longitude < lngMin) {
-                        lngMin = coords.longitude;
+                    if (coords.lng < lngMin) {
+                        lngMin = coords.lng;
                     }
-                    if (coords.longitude > lngMax) {
-                        lngMax = coords.longitude;
+                    if (coords.lng > lngMax) {
+                        lngMax = coords.lng;
                     }
                 });
 
@@ -132,6 +146,29 @@
                 }
                 return a;
             }
+        </script>
+
+        <script type="module">
+            // Import the functions you need from the SDKs you need
+            import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.9/firebase-app.js";
+            import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/9.6.9/firebase-database.js";
+
+            // TODO: Add SDKs for Firebase products that you want to use
+            // https://firebase.google.com/docs/web/setup#available-libraries
+
+            const app = initializeApp(firebaseConfig);
+
+            function getCheckinData() {
+                const db = getDatabase();
+                const checkinsListRef = ref(db, 'checkins');
+                get(checkinsListRef).then(function(snapshot) {
+                    var data = snapshot.val();
+                    var locations = Object.values(data).map(function(entry) { return entry.location; });
+                    window.onCheckinDataReceived(locations);
+                });
+            }
+
+            getCheckinData();
         </script>
     </body>
 </html>

@@ -1,0 +1,30 @@
+<html>
+    <body>
+        <script src="firebaseConfig.js"></script>
+        <script src="testData.js"></script>
+        <script type="module">
+            // Import the functions you need from the SDKs you need
+            import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.9/firebase-app.js";
+            import { getDatabase, ref, set, push } from "https://www.gstatic.com/firebasejs/9.6.9/firebase-database.js";
+
+            var testData = window.testData;
+        
+            // TODO: Add SDKs for Firebase products that you want to use
+            // https://firebase.google.com/docs/web/setup#available-libraries
+        
+            const app = initializeApp(firebaseConfig);
+        
+            function checkIn() {
+                const db = getDatabase();
+                const checkinsListRef = ref(db, 'checkins');
+                const newCheckinRef = push(checkinsListRef);
+                set(newCheckinRef, {
+                    location: testData.getPoint()
+                });
+            }
+        
+            window.checkIn = checkIn;
+        </script>
+        <button onclick="checkIn()">Check In</button>
+    </body>
+</html>
