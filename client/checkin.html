@@ -1,0 +1,50 @@
+<html>
+    <body>
+        <script src="firebaseConfig.js"></script>
+        <script>
+            function onDetectionComplete(msg) {
+                console.log(msg);
+                var el = document.createElement('div');
+                el.innerHTML = msg;
+                document.body.append(el);
+            }
+        </script>
+        <script type="module">
+            import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.9/firebase-app.js";
+            import { getDatabase, ref, set, push } from "https://www.gstatic.com/firebasejs/9.6.9/firebase-database.js";
+
+            const app = initializeApp(firebaseConfig);
+
+            function detectAndReportLocation() {
+                if (Geolocation.getCurrentPosition) {
+                    return Geolocation.getCurrentPosition(onSuccess, onError)
+                } else {
+                    onDetectionComplete("Your browser doesn't support the Geolocation API. :-(");
+                }
+            }
+
+            function onSuccess(pos) {
+                checkIn(pos);
+            }
+
+            function onError(err) {
+                onDetectionComplete("Something went wrong. :-(");
+            }
+        
+            function checkIn(pos) {
+                const db = getDatabase();
+                const checkinsListRef = ref(db, 'checkins');
+                const newCheckinRef = push(checkinsListRef);
+
+                set(newCheckinRef, {
+                    location: pos.coords
+                });
+
+                onDetectionComplete("Sweet! You checked in. :-)");
+            }
+
+            detectAndReportLocation();
+        </script>
+        
+    </body>
+</html>
