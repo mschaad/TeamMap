@@ -16,8 +16,9 @@
             const app = initializeApp(firebaseConfig);
 
             function detectAndReportLocation() {
-                if (Geolocation.getCurrentPosition) {
-                    return Geolocation.getCurrentPosition(onSuccess, onError)
+                if (navigator.geolocation.getCurrentPosition) {
+                    navigator.geolocation.getCurrentPosition(onSuccess, onError, {maximumAge:60000, timeout:5000, enableHighAccuracy:true});
+
                 } else {
                     onDetectionComplete("Your browser doesn't support the Geolocation API. :-(");
                 }
@@ -37,10 +38,13 @@
                 const newCheckinRef = push(checkinsListRef);
 
                 set(newCheckinRef, {
-                    location: pos.coords
+                    location: {
+                        latitude: pos.coords.latitude,
+                        longitude: pos.coords.longitude
+                    }
                 });
 
-                onDetectionComplete("Sweet! You checked in. :-)");
+                onDetectionComplete("Sweet! You checked in. :-)  Your coordinates are (" + pos.coords.latitude + ", " + pos.coords.longitude + ")");
             }
 
             detectAndReportLocation();
